@@ -1,17 +1,13 @@
 package test_message
 
-//go:generate gengo msg rosgo_tests/AllFieldTypes AllFieldTypes.msg
-//go:generate gengo msg std_msgs/Header
-//go:generate gengo msg std_msgs/Int16
-//go:generate gengo msg std_msgs/Int32
-//go:generate gengo msg std_msgs/ColorRGBA
 import (
 	"bytes"
 	"fmt"
-	"github.com/akio/rosgo/ros"
-	"rosgo_tests"
-	"std_msgs"
+	"github.com/seqsense/rosgo/ros"
 	"testing"
+
+	"github.com/seqsense/rosgo/internal/rosgo_tests"
+	"github.com/seqsense/rosgo/internal/std_msgs"
 )
 
 func TestInitialize(t *testing.T) {
@@ -210,7 +206,7 @@ func getTestData() []byte {
 		0x67, 0x45, 0x23, 0x01,
 		0xEF, 0xCD, 0xAB, 0x89,
 		// FixAry
-		0x02, 0x00, 0x00, 0x00,
+		// 0x02, 0x00, 0x00, 0x00, // github.com/akio/rosgo/gengo adds array size to fixed array (bug)
 		0x67, 0x45, 0x23, 0x01,
 		0xEF, 0xCD, 0xAB, 0x89,
 	}

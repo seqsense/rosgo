@@ -1,12 +1,16 @@
 #!/bin/bash
-source /opt/ros/kinetic/setup.bash
-export PATH=$PWD/bin:/usr/local/go/bin:$PATH
-export GOPATH=$PWD:/usr/local/go
+
+set -e
+
+source /opt/ros/${ROS_DISTRO}/setup.bash
+export PATH=/go/bin:/usr/local/go/bin:$PATH
+export GOPATH=/go
 
 roscore &
-go install github.com/akio/rosgo/gengo
-go generate github.com/akio/rosgo/test/test_message
-go test github.com/akio/rosgo/xmlrpc
-go test github.com/akio/rosgo/ros
-go test github.com/akio/rosgo/test/test_message
 
+go install github.com/seqsense/rosgo/gengo
+go generate ./test/test_message
+go test ./xmlrpc -v
+go test ./ros -v
+go test ./test/test_message -v
+go test -tags integration . -v
