@@ -37,7 +37,7 @@ type defaultPublisher struct {
 
 func newDefaultPublisher(node *defaultNode,
 	topic string, msgType MessageType,
-	connectCallback, disconnectCallback func(SingleSubscriberPublisher)) *defaultPublisher {
+	connectCallback, disconnectCallback func(SingleSubscriberPublisher)) (*defaultPublisher, error) {
 	pub := new(defaultPublisher)
 	pub.node = node
 	pub.topic = topic
@@ -50,11 +50,11 @@ func newDefaultPublisher(node *defaultNode,
 	pub.connectCallback = connectCallback
 	pub.disconnectCallback = disconnectCallback
 	if listener, err := listenRandomPort(node.listenIp, 10); err != nil {
-		panic(err)
+		return nil, err
 	} else {
 		pub.listener = listener
 	}
-	return pub
+	return pub, nil
 }
 
 func (pub *defaultPublisher) start(wg *sync.WaitGroup) {

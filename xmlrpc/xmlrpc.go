@@ -310,7 +310,7 @@ func parseValue(d *xml.Decoder) (interface{}, error) {
 					}
 				}
 			}
-			return nil, errors.New("Not reached")
+			return nil, errors.New("not reached")
 		case "struct":
 			m := make(map[string]interface{})
 			var name string
@@ -353,9 +353,9 @@ func parseValue(d *xml.Decoder) (interface{}, error) {
 					}
 				}
 			}
-			return nil, errors.New("Not reached")
+			return nil, errors.New("not reached")
 		default:
-			return nil, errors.New("Not supported: t.Name.Local = " + t.Name.Local)
+			return nil, errors.New("not supported: t.Name.Local = " + t.Name.Local)
 		}
 	case xml.CharData:
 		copy := t.Copy()
@@ -521,7 +521,7 @@ func Call(url string, method string, args ...interface{}) (res interface{}, e er
 		e = errors.New("Malformed XMLRPC Fault Response")
 		return
 	}
-	panic("Not reached")
+	panic("not reached")
 }
 
 //type Method func (args ...interface{}) (interface{}, error)

@@ -82,7 +82,8 @@ func (c *defaultServiceClient) Call(srv Service) error {
 			logger.Debugf("  `%s` = `%s`", h.key, h.value)
 		}
 		if resHeaderMap["type"] != msgType || resHeaderMap["md5sum"] != md5sum {
-			logger.Fatalf("Incompatible message type!")
+			logger.Error("Incompatible message type!")
+			return errors.New("incompatible message type")
 		}
 		logger.Debug("Start receiving messages...")
 	}

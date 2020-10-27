@@ -74,7 +74,7 @@ func (sub *defaultSubscriber) start(wg *sync.WaitGroup, nodeId, nodeApiUri, mast
 				protocols := []interface{}{[]interface{}{"TCPROS"}}
 				result, err := callRosApi(pub, "requestTopic", nodeId, sub.topic, protocols)
 				if err != nil {
-					logger.Fatal(err)
+					logger.Errorf("Failed to request topic: %v", err)
 					continue
 				}
 				protocolParams := result.([]interface{})
@@ -96,7 +96,7 @@ func (sub *defaultSubscriber) start(wg *sync.WaitGroup, nodeId, nodeApiUri, mast
 						quitChan,
 						sub.disconnectedChan)
 				} else {
-					logger.Warnf("rosgo Not support protocol '%s'", name)
+					logger.Warnf("Rosgo does not support protocol '%s'", name)
 				}
 			}
 		case callback := <-sub.addCallbackChan:
@@ -177,7 +177,7 @@ func startRemotePublisherConn(logger Logger,
 	}
 	err = writeConnectionHeader(headers, conn)
 	if err != nil {
-		logger.Fatal("Failed to write connection header.")
+		logger.Error("Failed to write connection header.")
 		disconnectedChan <- pubUri
 		return
 	}
@@ -186,7 +186,7 @@ func startRemotePublisherConn(logger Logger,
 	var resHeaders []header
 	resHeaders, err = readConnectionHeader(conn)
 	if err != nil {
-		logger.Fatal("Failed to read reasponse header.")
+		logger.Error("Failed to read reasponse header.")
 		disconnectedChan <- pubUri
 		return
 	}

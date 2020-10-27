@@ -56,7 +56,10 @@ func TestIntegration_PubSub(t *testing.T) {
 
 			go func() {
 				time.Sleep(tt.delayAdvertise)
-				pub := nodePub.NewPublisher("/test_topic", std_msgs.MsgInt32)
+				pub, err := nodePub.NewPublisher("/test_topic", std_msgs.MsgInt32)
+				if err != nil {
+					t.Fatal(err)
+				}
 
 				time.Sleep(tt.delayPublish)
 				pub.Publish(&std_msgs.Int32{Data: expectedValue})
@@ -66,13 +69,16 @@ func TestIntegration_PubSub(t *testing.T) {
 			}()
 			go func() {
 				time.Sleep(tt.delaySubscribe)
-				_ = nodeSub.NewSubscriber("/test_topic", std_msgs.MsgInt32, func(msg *std_msgs.Int32) {
+				_, err := nodeSub.NewSubscriber("/test_topic", std_msgs.MsgInt32, func(msg *std_msgs.Int32) {
 					select {
 					case chMsg <- *msg:
 					default:
 						t.Error("Received too many number of messages")
 					}
 				})
+				if err != nil {
+					t.Error(err)
+				}
 
 				nodeSub.Spin()
 				wg.Done()

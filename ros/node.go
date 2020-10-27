@@ -2,6 +2,7 @@ package ros
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/akio/rosgo/xmlrpc"
 	"math/rand"
@@ -186,7 +187,7 @@ func newDefaultNodeWithLogger(name string, args []string, logger Logger) (*defau
 
 	listener, err := listenRandomPort(node.listenIp, 10)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Error(err)
 		return nil, err
 	}
 	_, port, err := net.SplitHostPort(listener.Addr().String())
@@ -330,32 +331,34 @@ func (node *defaultNode) requestTopic(callerId string, topic string, protocols [
 	return buildRosApiResult(code, message, value), nil
 }
 
-func (node *defaultNode) NewPublisher(topic string, msgType MessageType) Publisher {
+func (node *defaultNode) NewPublisher(topic string, msgType MessageType) (Publisher, error) {
 	name := node.nameResolver.remap(topic)
 	return node.NewPublisherWithCallbacks(name, msgType, nil, nil)
 }
 
-func (node *defaultNode) NewPublisherWithCallbacks(topic string, msgType MessageType, connectCallback, disconnectCallback func(SingleSubscriberPublisher)) Publisher {
+func (node *defaultNode) NewPublisherWithCallbacks(topic string, msgType MessageType, connectCallback, disconnectCallback func(SingleSubscriberPublisher)) (Publisher, error) {
 	name := node.nameResolver.remap(topic)
 	pub, ok := node.publishers[name]
-	logger := node.logger
 	if !ok {
 		_, err := callRosApi(node.masterUri, "registerPublisher",
 			node.qualifiedName,
 			name, msgType.Name(),
 			node.xmlrpcUri)
 		if err != nil {
-			logger.Fatalf("Failed to call registerPublisher(): %s", err)
+			return nil, fmt.Errorf("failed to call registerPublisher(): %w", err)
 		}
 
-		pub = newDefaultPublisher(node, name, msgType, connectCallback, disconnectCallback)
+		pub, err = newDefaultPublisher(node, name, msgType, connectCallback, disconnectCallback)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create defaultPublisher(): %w", err)
+		}
 		node.publishers[name] = pub
 		go pub.start(&node.waitGroup)
 	}
-	return pub
+	return pub, nil
 }
 
-func (node *defaultNode) NewSubscriber(topic string, msgType MessageType, callback interface{}) Subscriber {
+func (node *defaultNode) NewSubscriber(topic string, msgType MessageType, callback interface{}) (Subscriber, error) {
 	name := node.nameResolver.remap(topic)
 	sub, ok := node.subscribers[name]
 	logger := node.logger
@@ -367,17 +370,17 @@ func (node *defaultNode) NewSubscriber(topic string, msgType MessageType, callba
 			msgType.Name(),
 			node.xmlrpcUri)
 		if err != nil {
-			logger.Fatalf("Failed to call registerSubscriber() for %s.", err)
+			return nil, fmt.Errorf("failed to call registerSubscriber(): %w", err)
 		}
 		list, ok := result.([]interface{})
 		if !ok {
-			logger.Fatalf("result is not []string but %s.", reflect.TypeOf(result).String())
+			return nil, fmt.Errorf("result is not []string but %s.", reflect.TypeOf(result).String())
 		}
 		var publishers []string
 		for _, item := range list {
 			s, ok := item.(string)
 			if !ok {
-				logger.Fatal("Publisher list contains no string object")
+				return nil, errors.New("publisher list contains no string object")
 			}
 			publishers = append(publishers, s)
 		}
@@ -395,27 +398,28 @@ func (node *defaultNode) NewSubscriber(topic string, msgType MessageType, callba
 	} else {
 		sub.callbacks = append(sub.callbacks, callback)
 	}
-	return sub
+	return sub, nil
 }
 
-func (node *defaultNode) NewServiceClient(service string, srvType ServiceType) ServiceClient {
+func (node *defaultNode) NewServiceClient(service string, srvType ServiceType) (ServiceClient, error) {
 	name := node.nameResolver.remap(service)
 	client := newDefaultServiceClient(node.logger, node.qualifiedName, node.masterUri, name, srvType)
-	return client
+	return client, nil
 }
 
-func (node *defaultNode) NewServiceServer(service string, srvType ServiceType, handler interface{}) ServiceServer {
+func (node *defaultNode) NewServiceServer(service string, srvType ServiceType, handler interface{}) (ServiceServer, error) {
 	name := node.nameResolver.remap(service)
 	server, ok := node.servers[name]
 	if ok {
 		server.Shutdown()
 	}
-	server = newDefaultServiceServer(node, name, srvType, handler)
-	if server == nil {
-		return nil
+	var err error
+	server, err = newDefaultServiceServer(node, name, srvType, handler)
+	if err != nil {
+		return nil, err
 	}
 	node.servers[name] = server
-	return server
+	return server, nil
 }
 
 func (node *defaultNode) SpinOnce() {
